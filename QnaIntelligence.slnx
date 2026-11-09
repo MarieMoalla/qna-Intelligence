@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/QnaIntelligence.Api/QnaIntelligence.Api.csproj" />
+    <Project Path="src/QnaIntelligence.Application/QnaIntelligence.Application.csproj" />
+    <Project Path="src/QnaIntelligence.Domain/QnaIntelligence.Domain.csproj" />
+    <Project Path="src/QnaIntelligence.Infrastructure/QnaIntelligence.Infrastructure.csproj" />
+    <Project Path="src/QnaIntelligence.Web/QnaIntelligence.Web.csproj" />
+  </Folder>
+</Solution>
