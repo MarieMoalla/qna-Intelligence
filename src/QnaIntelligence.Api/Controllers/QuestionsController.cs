@@ -62,7 +62,7 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
             Title = question.Title,
             Technology = question.Technology,
             Tag = question.Tag,
-            PriorityScore = 0,
+            PriorityScore = question.PriorityScore,
             Status = question.Status.ToString()
         };
     }
@@ -78,7 +78,7 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
             Technology = question.Technology,
             Tag = question.Tag,
             HasAnswers = question.HasAnswers,
-            PriorityScore = 0,
+            PriorityScore = question.PriorityScore,
             Status = question.Status.ToString(),
             CreatedUtc = question.CreatedUtc,
             UpdatedUtc = null,

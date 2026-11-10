@@ -16,6 +16,8 @@ public class Question
 
     public string Tag { get; set; } = string.Empty;
 
+    public int PriorityScore { get; set; }
+
     public bool HasAnswers { get; set; }
 
     public DateTime CreatedUtc { get; set; }

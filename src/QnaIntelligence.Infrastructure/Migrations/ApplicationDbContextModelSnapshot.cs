@@ -38,6 +38,9 @@ namespace QnaIntelligence.Infrastructure.Migrations
                     b.Property<bool>("HasAnswers")
                         .HasColumnType("bit");
 
+                    b.Property<int>("PriorityScore")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
