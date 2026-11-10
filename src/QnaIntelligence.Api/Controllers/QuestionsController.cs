@@ -17,7 +17,9 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<QuestionDto>> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetQuestionDetailsDto>> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         var question = await questionRepository.GetByIdAsync(id, cancellationToken);
         if (question is null)
@@ -25,7 +27,7 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
             return NotFound();
         }
 
-        return ToDto(question);
+        return ToDetailsDto(question);
     }
 
     [HttpPost]
@@ -62,6 +64,35 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
             Tag = question.Tag,
             PriorityScore = 0,
             Status = question.Status.ToString()
+        };
+    }
+
+    private static GetQuestionDetailsDto ToDetailsDto(Question question)
+    {
+        return new GetQuestionDetailsDto
+        {
+            Id = question.Id,
+            Title = question.Title,
+            Url = question.Url,
+            Content = question.Content,
+            Technology = question.Technology,
+            Tag = question.Tag,
+            HasAnswers = question.HasAnswers,
+            PriorityScore = 0,
+            Status = question.Status.ToString(),
+            CreatedUtc = question.CreatedUtc,
+            UpdatedUtc = null,
+            Analysis = question.Analysis is null
+                ? null
+                : new QuestionAnalysisDto
+                {
+                    Summary = question.Analysis.Summary,
+                    RootCauses = question.Analysis.RootCauses,
+                    MissingInformation = question.Analysis.MissingInformation,
+                    TroubleshootingSteps = question.Analysis.TroubleshootingSteps,
+                    ProposedAnswer = question.Analysis.ProposedAnswer,
+                    ConfidenceScore = question.Analysis.ConfidenceScore
+                }
         };
     }
 }

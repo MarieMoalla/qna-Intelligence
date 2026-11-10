@@ -14,7 +14,9 @@ public class QuestionRepository(ApplicationDbContext dbContext) : IQuestionRepos
 
     public Task<Question?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return dbContext.Questions.FirstOrDefaultAsync(
+        return dbContext.Questions
+            .Include(question => question.Analysis)
+            .FirstOrDefaultAsync(
             question => question.Id == id,
             cancellationToken);
     }
