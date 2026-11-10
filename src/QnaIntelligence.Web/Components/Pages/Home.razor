@@ -1,4 +1,8 @@
 ﻿@page "/"
+@using System.Net.Http
+@using System.Net.Http.Json
+@using QnaIntelligence.Application.Questions.Dtos
+@inject IHttpClientFactory HttpClientFactory
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -6,9 +10,47 @@
 
 <section aria-labelledby="questions-heading">
     <h2 id="questions-heading">Questions</h2>
-    <ul>
-        <li>[95] Azure App Service deployment fails</li>
-        <li>[82] ASP.NET Core startup exception</li>
-        <li>[71] Windows Update error</li>
-    </ul>
+    @if (errorMessage is not null)
+    {
+        <p role="alert">@errorMessage</p>
+    }
+    else if (questions is null)
+    {
+        <p>Loading questions...</p>
+    }
+    else if (questions.Count == 0)
+    {
+        <p>No questions found.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var question in questions)
+            {
+                <li>
+                    <NavLink href="@($"/questions/{question.Id}")">
+                        [@question.PriorityScore] @question.Title
+                    </NavLink>
+                </li>
+            }
+        </ul>
+    }
 </section>
+
+@code {
+    private List<QuestionDto>? questions;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            questions = await client.GetFromJsonAsync<List<QuestionDto>>("api/questions") ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to load questions. Make sure the API is running.";
+        }
+    }
+}

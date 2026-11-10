@@ -1,0 +1,76 @@
+@page "/questions/{Id:guid}"
+@using System.Net
+@using QnaIntelligence.Application.Questions.Dtos
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>@(question?.Title ?? "Question details")</PageTitle>
+
+@if (errorMessage is not null)
+{
+    <p role="alert">@errorMessage</p>
+}
+else if (question is null)
+{
+    <p>Loading question...</p>
+}
+else
+{
+    <h1>@question.Title</h1>
+
+    <dl>
+        <dt>Technology</dt>
+        <dd>@question.Technology</dd>
+
+        <dt>Tag</dt>
+        <dd>@question.Tag</dd>
+
+        <dt>Status</dt>
+        <dd>@question.Status</dd>
+
+        <dt>Priority</dt>
+        <dd>@question.PriorityScore</dd>
+
+        <dt>Content</dt>
+        <dd>@question.Content</dd>
+    </dl>
+}
+
+<p><a href="/">Back to questions</a></p>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private GetQuestionDetailsDto? question;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        question = null;
+        errorMessage = null;
+
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            using var response = await client.GetAsync($"api/questions/{Id}");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                errorMessage = "Question not found.";
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+            question = await response.Content.ReadFromJsonAsync<GetQuestionDetailsDto>();
+
+            if (question is null)
+            {
+                errorMessage = "Question details could not be loaded.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to load question details. Make sure the API is running.";
+        }
+    }
+}

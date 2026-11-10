@@ -3,6 +3,10 @@ using QnaIntelligence.Web.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
+builder.Services.AddHttpClient("QnaApi", client =>
+    client.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

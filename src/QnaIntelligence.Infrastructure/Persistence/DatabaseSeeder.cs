@@ -34,7 +34,7 @@ public static class DatabaseSeeder
                 Content = "An exception occurs while an ASP.NET Core application is starting.",
                 Technology = "ASP.NET Core",
                 Tag = "startup",
-                PriorityScore = 82,
+                PriorityScore = 83,
                 CreatedUtc = createdUtc
             },
             new Question
@@ -44,7 +44,7 @@ public static class DatabaseSeeder
                 Content = "Windows Update fails with error code 0x80070057.",
                 Technology = "Windows Update",
                 Tag = "update",
-                PriorityScore = 71,
+                PriorityScore = 72,
                 CreatedUtc = createdUtc
             }
         };
