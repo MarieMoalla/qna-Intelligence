@@ -3,6 +3,7 @@
 @using System.Net.Http.Json
 @using QnaIntelligence.Application.Questions.Dtos
 @inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -31,15 +32,26 @@
                     <NavLink href="@($"/questions/{question.Id}")">
                         [@question.PriorityScore] @question.Title
                     </NavLink>
+                    <button type="button"
+                            @onclick="() => AnalyzeAsync(question.Id)"
+                            disabled="@(analyzingQuestionId is not null)">
+                        @(analyzingQuestionId == question.Id ? "Analyzing..." : "Analyze")
+                    </button>
                 </li>
             }
         </ul>
+    }
+    @if (analysisError is not null)
+    {
+        <p role="alert">@analysisError</p>
     }
 </section>
 
 @code {
     private List<QuestionDto>? questions;
     private string? errorMessage;
+    private Guid? analyzingQuestionId;
+    private string? analysisError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,6 +63,30 @@
         catch (HttpRequestException)
         {
             errorMessage = "Unable to load questions. Make sure the API is running.";
+        }
+    }
+
+    private async Task AnalyzeAsync(Guid questionId)
+    {
+        analyzingQuestionId = questionId;
+        analysisError = null;
+
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            using var response = await client.PostAsync(
+                $"api/questions/{questionId}/analyze",
+                content: null);
+            response.EnsureSuccessStatusCode();
+            Navigation.NavigateTo($"/questions/{questionId}");
+        }
+        catch (HttpRequestException)
+        {
+            analysisError = "Unable to analyze the question. Make sure the API is running.";
+        }
+        finally
+        {
+            analyzingQuestionId = null;
         }
     }
 }

@@ -7,7 +7,9 @@ namespace QnaIntelligence.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class QuestionsController(IQuestionRepository questionRepository) : ControllerBase
+public class QuestionsController(
+    IQuestionRepository questionRepository,
+    IAiAnalysisService aiAnalysisService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<QuestionDto>>> GetAll(CancellationToken cancellationToken)
@@ -28,6 +30,40 @@ public class QuestionsController(IQuestionRepository questionRepository) : Contr
         }
 
         return ToDetailsDto(question);
+    }
+
+    [HttpPost("{id:guid}/analyze")]
+    public async Task<ActionResult<QuestionAnalysisDto>> Analyze(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var question = await questionRepository.GetByIdAsync(id, cancellationToken);
+        if (question is null)
+        {
+            return NotFound();
+        }
+
+        var analysisDto = await aiAnalysisService.AnalyzeAsync(
+            question.Title,
+            question.Content,
+            cancellationToken);
+
+        var analysis = new QuestionAnalysis
+        {
+            Id = Guid.NewGuid(),
+            QuestionId = question.Id,
+            Summary = analysisDto.Summary,
+            RootCauses = analysisDto.RootCauses,
+            MissingInformation = analysisDto.MissingInformation,
+            TroubleshootingSteps = analysisDto.TroubleshootingSteps,
+            ProposedAnswer = analysisDto.ProposedAnswer,
+            ConfidenceScore = analysisDto.ConfidenceScore,
+            Question = question
+        };
+
+        await questionRepository.SaveAnalysisAsync(question, analysis, cancellationToken);
+
+        return Ok(analysisDto);
     }
 
     [HttpPost]

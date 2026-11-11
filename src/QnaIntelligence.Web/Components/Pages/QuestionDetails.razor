@@ -33,6 +33,36 @@ else
         <dt>Content</dt>
         <dd>@question.Content</dd>
     </dl>
+
+    @if (question.Analysis is not null)
+    {
+        <section aria-labelledby="analysis-heading">
+            <h2 id="analysis-heading">AI Analysis</h2>
+            <dl>
+                <dt>AI Summary</dt>
+                <dd>@question.Analysis.Summary</dd>
+
+                <dt>Root Causes</dt>
+                <dd>@question.Analysis.RootCauses</dd>
+
+                <dt>Missing Information</dt>
+                <dd>@question.Analysis.MissingInformation</dd>
+
+                <dt>Troubleshooting</dt>
+                <dd>@question.Analysis.TroubleshootingSteps</dd>
+
+                <dt>Suggested Answer</dt>
+                <dd>@question.Analysis.ProposedAnswer</dd>
+
+                <dt>Confidence</dt>
+                <dd>@question.Analysis.ConfidenceScore.ToString("P0")</dd>
+            </dl>
+        </section>
+    }
+    else
+    {
+        <p>Analysis has not been generated yet.</p>
+    }
 }
 
 <p><a href="/">Back to questions</a></p>

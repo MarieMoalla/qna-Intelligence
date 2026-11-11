@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QnaIntelligence.Application.Interfaces;
+using QnaIntelligence.Application.Services;
 using QnaIntelligence.Infrastructure.Persistence;
 using QnaIntelligence.Infrastructure.Repositories;
 
@@ -13,6 +14,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IAiAnalysisService, MockAiAnalysisService>();
 
 var app = builder.Build();
 

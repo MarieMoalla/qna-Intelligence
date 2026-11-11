@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Domain.Entities;
+using QnaIntelligence.Domain.Enums;
 using QnaIntelligence.Infrastructure.Persistence;
 
 namespace QnaIntelligence.Infrastructure.Repositories;
@@ -30,6 +31,32 @@ public class QuestionRepository(ApplicationDbContext dbContext) : IQuestionRepos
     public async Task UpdateAsync(Question question, CancellationToken cancellationToken)
     {
         dbContext.Questions.Update(question);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveAnalysisAsync(
+        Question question,
+        QuestionAnalysis analysis,
+        CancellationToken cancellationToken)
+    {
+        if (question.Analysis is null)
+        {
+            analysis.QuestionId = question.Id;
+            analysis.Question = question;
+            question.Analysis = analysis;
+            await dbContext.Analyses.AddAsync(analysis, cancellationToken);
+        }
+        else
+        {
+            question.Analysis.Summary = analysis.Summary;
+            question.Analysis.RootCauses = analysis.RootCauses;
+            question.Analysis.MissingInformation = analysis.MissingInformation;
+            question.Analysis.TroubleshootingSteps = analysis.TroubleshootingSteps;
+            question.Analysis.ProposedAnswer = analysis.ProposedAnswer;
+            question.Analysis.ConfidenceScore = analysis.ConfidenceScore;
+        }
+
+        question.Status = QuestionStatus.Analyzed;
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
