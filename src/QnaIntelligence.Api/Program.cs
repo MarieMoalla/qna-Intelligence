@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Application.Services;
+using QnaIntelligence.Infrastructure.Ai;
+using QnaIntelligence.Infrastructure.Options;
 using QnaIntelligence.Infrastructure.Persistence;
 using QnaIntelligence.Infrastructure.Repositories;
 
@@ -14,7 +16,22 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
-builder.Services.AddScoped<IAiAnalysisService, MockAiAnalysisService>();
+builder.Services.Configure<AzureOpenAiOptions>(
+    builder.Configuration.GetSection("AzureOpenAI"));
+
+var aiAnalysisProvider = builder.Configuration["AiAnalysis:Provider"] ?? "AzureOpenAI";
+switch (aiAnalysisProvider)
+{
+    case "AzureOpenAI":
+        builder.Services.AddScoped<IAiAnalysisService, AzureOpenAiAnalysisService>();
+        break;
+    case "Mock":
+        builder.Services.AddScoped<IAiAnalysisService, MockAiAnalysisService>();
+        break;
+    default:
+        throw new InvalidOperationException(
+            $"Unsupported AI analysis provider '{aiAnalysisProvider}'. Supported values are 'AzureOpenAI' and 'Mock'.");
+}
 
 var app = builder.Build();
 
