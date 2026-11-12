@@ -46,6 +46,7 @@ public class QuestionsController(
         }
 
         var analysisDto = await aiAnalysisService.AnalyzeAsync(
+            question.Id,
             question.Title,
             question.Content,
             cancellationToken);

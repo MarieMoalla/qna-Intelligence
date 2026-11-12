@@ -17,6 +17,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<FollowedTag> FollowedTags => Set<FollowedTag>();
 
+    public DbSet<AiRequestLog> AiRequestLogs => Set<AiRequestLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<FollowedTag>()

@@ -5,17 +5,24 @@ using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Application.Questions.Dtos;
+using QnaIntelligence.Domain.Entities;
 using QnaIntelligence.Infrastructure.Options;
+using QnaIntelligence.Infrastructure.Persistence;
 
 namespace QnaIntelligence.Infrastructure.Ai;
 
 public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
 {
     private readonly ChatClient _chatClient;
+    private readonly ApplicationDbContext _dbContext;
+    private readonly string _model;
 
-    public AzureOpenAiAnalysisService(IOptions<AzureOpenAiOptions> options)
+    public AzureOpenAiAnalysisService(
+        IOptions<AzureOpenAiOptions> options,
+        ApplicationDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(dbContext);
 
         var settings = options.Value;
         if (string.IsNullOrWhiteSpace(settings.Endpoint))
@@ -37,9 +44,12 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
             new Uri(settings.Endpoint, UriKind.Absolute),
             new AzureKeyCredential(settings.ApiKey));
         _chatClient = client.GetChatClient(settings.DeploymentName);
+        _dbContext = dbContext;
+        _model = settings.DeploymentName;
     }
 
     public async Task<QuestionAnalysisDto> AnalyzeAsync(
+        Guid questionId,
         string title,
         string content,
         CancellationToken cancellationToken)
@@ -88,6 +98,19 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
             cancellationToken);
 
         var responseJson = string.Concat(completionResult.Value.Content.Select(part => part.Text));
+        await _dbContext.AiRequestLogs.AddAsync(
+            new AiRequestLog
+            {
+                Id = Guid.NewGuid(),
+                QuestionId = questionId,
+                CreatedUtc = DateTime.UtcNow,
+                Model = _model,
+                Prompt = prompt,
+                Response = responseJson
+            },
+            cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         return ParseAnalysis(responseJson);
     }
 
