@@ -8,6 +8,8 @@ public class QuestionAnalysis
 
     public string Summary { get; set; } = string.Empty;
 
+    public string Technologies { get; set; } = string.Empty;
+
     public string RootCauses { get; set; } = string.Empty;
 
     public string MissingInformation { get; set; } = string.Empty;

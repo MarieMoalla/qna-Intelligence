@@ -1,0 +1,142 @@
+@page "/tags"
+@using System.Net
+@using System.Net.Http.Json
+@using QnaIntelligence.Application.Questions.Dtos
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Followed Tags</PageTitle>
+
+<h1>Tags</h1>
+
+<section aria-labelledby="followed-tags-heading">
+    <h2 id="followed-tags-heading">Followed Tags</h2>
+
+    @if (errorMessage is not null)
+    {
+        <p role="alert">@errorMessage</p>
+    }
+
+    @if (tags is null)
+    {
+        <p>Loading tags...</p>
+    }
+    else if (tags.Count == 0)
+    {
+        <p>No followed tags yet. Add a tag to get started.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var tag in tags)
+            {
+                <li>
+                    <label>
+                        <input type="checkbox"
+                               checked="@tag.IsActive"
+                               disabled="@isSaving"
+                               @onchange="args => SetActiveAsync(tag, args)" />
+                        @(tag.IsActive ? "✅" : "⬜") @tag.Name
+                    </label>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<form @onsubmit="AddTagAsync" @onsubmit:preventDefault>
+    <label for="new-tag-name">Add Tag</label>
+    <InputText id="new-tag-name" @bind-Value="newTagName" />
+    <button type="submit" disabled="@isSaving">Add Tag</button>
+</form>
+
+@code {
+    private List<FollowedTagDto>? tags;
+    private string newTagName = string.Empty;
+    private string? errorMessage;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTagsAsync();
+    }
+
+    private async Task LoadTagsAsync()
+    {
+        errorMessage = null;
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            tags = await client.GetFromJsonAsync<List<FollowedTagDto>>("api/followedtags") ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to load followed tags. Make sure the API is running.";
+        }
+    }
+
+    private async Task AddTagAsync()
+    {
+        var name = newTagName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            errorMessage = "Enter a tag name.";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            using var response = await client.PostAsJsonAsync(
+                "api/followedtags",
+                new CreateFollowedTagDto { Name = name });
+
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                errorMessage = "That tag is already being followed.";
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+            newTagName = string.Empty;
+            await LoadTagsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to add the tag. Make sure the API is running.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task SetActiveAsync(FollowedTagDto tag, ChangeEventArgs args)
+    {
+        if (args.Value is not bool isActive)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            using var client = HttpClientFactory.CreateClient("QnaApi");
+            using var response = await client.PutAsJsonAsync(
+                $"api/followedtags/{tag.Id}",
+                new UpdateFollowedTagDto { Name = tag.Name, IsActive = isActive });
+            response.EnsureSuccessStatusCode();
+            tag.IsActive = isActive;
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Unable to update the tag. Make sure the API is running.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

@@ -49,12 +49,22 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
         cancellationToken.ThrowIfCancellationRequested();
 
         var prompt = $$"""
-            You are a Microsoft MVP helping answer Microsoft Q&A questions.
+            You are an experienced Microsoft MVP answering Microsoft Q&A.
 
-            Analyze the question and return JSON only.
+            Your task:
+
+            1. Identify technologies involved.
+            2. Summarize the problem.
+            3. List likely root causes.
+            4. Identify missing information.
+            5. Provide troubleshooting steps.
+            6. Create a detailed answer suitable for Microsoft Q&A.
+
+            Return JSON only.
 
             {
             "summary":"",
+            "technologies":"",
             "rootCauses":"",
             "missingInformation":"",
             "troubleshootingSteps":"",
@@ -107,6 +117,7 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
             return new QuestionAnalysisDto
             {
                 Summary = ReadString(root, "summary"),
+                Technologies = ReadString(root, "technologies"),
                 RootCauses = ReadString(root, "rootCauses"),
                 MissingInformation = ReadString(root, "missingInformation"),
                 TroubleshootingSteps = ReadString(root, "troubleshootingSteps"),

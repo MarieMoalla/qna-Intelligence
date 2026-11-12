@@ -15,6 +15,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IFollowedTagRepository, FollowedTagRepository>();
 builder.Services.Configure<AzureOpenAiOptions>(
     builder.Configuration.GetSection("AzureOpenAI"));
 builder.Services.AddScoped<AzureOpenAiAnalysisService>();

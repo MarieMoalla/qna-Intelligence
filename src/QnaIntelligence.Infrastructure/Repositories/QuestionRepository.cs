@@ -10,7 +10,9 @@ public class QuestionRepository(ApplicationDbContext dbContext) : IQuestionRepos
 {
     public Task<List<Question>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return dbContext.Questions.ToListAsync(cancellationToken);
+        return dbContext.Questions
+            .Include(question => question.Analysis)
+            .ToListAsync(cancellationToken);
     }
 
     public Task<Question?> GetByIdAsync(Guid id, CancellationToken cancellationToken)

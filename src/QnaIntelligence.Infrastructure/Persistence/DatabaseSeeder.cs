@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QnaIntelligence.Domain.Entities;
+using QnaIntelligence.Domain.Services;
 
 namespace QnaIntelligence.Infrastructure.Persistence;
 
@@ -24,7 +25,7 @@ public static class DatabaseSeeder
                 Content = "An application deployment to Azure App Service fails.",
                 Technology = "Azure App Service",
                 Tag = "deployment",
-                PriorityScore = 95,
+                PriorityScore = PriorityCalculator.Calculate(false, 0, 0),
                 CreatedUtc = createdUtc
             },
             new Question
@@ -34,7 +35,7 @@ public static class DatabaseSeeder
                 Content = "An exception occurs while an ASP.NET Core application is starting.",
                 Technology = "ASP.NET Core",
                 Tag = "startup",
-                PriorityScore = 83,
+                PriorityScore = PriorityCalculator.Calculate(false, 0, 0),
                 CreatedUtc = createdUtc
             },
             new Question
@@ -44,7 +45,7 @@ public static class DatabaseSeeder
                 Content = "Windows Update fails with error code 0x80070057.",
                 Technology = "Windows Update",
                 Tag = "update",
-                PriorityScore = 72,
+                PriorityScore = PriorityCalculator.Calculate(false, 0, 0),
                 CreatedUtc = createdUtc
             }
         };

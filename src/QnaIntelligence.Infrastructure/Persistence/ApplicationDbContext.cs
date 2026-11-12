@@ -14,4 +14,17 @@ public class ApplicationDbContext : DbContext
     public DbSet<Question> Questions => Set<Question>();
 
     public DbSet<QuestionAnalysis> Analyses => Set<QuestionAnalysis>();
+
+    public DbSet<FollowedTag> FollowedTags => Set<FollowedTag>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FollowedTag>()
+            .Property(followedTag => followedTag.Name)
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<FollowedTag>()
+            .HasIndex(followedTag => followedTag.Name)
+            .IsUnique();
+    }
 }

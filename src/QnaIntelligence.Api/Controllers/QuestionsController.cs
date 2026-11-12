@@ -3,6 +3,7 @@ using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Application.Questions.Dtos;
 using QnaIntelligence.Domain.Entities;
 using QnaIntelligence.Domain.Enums;
+using QnaIntelligence.Domain.Services;
 
 namespace QnaIntelligence.Api.Controllers;
 
@@ -56,6 +57,7 @@ public class QuestionsController(
             Question = question
         };
         analysis.Summary = analysisDto.Summary;
+        analysis.Technologies = analysisDto.Technologies;
         analysis.RootCauses = analysisDto.RootCauses;
         analysis.MissingInformation = analysisDto.MissingInformation;
         analysis.TroubleshootingSteps = analysisDto.TroubleshootingSteps;
@@ -64,6 +66,7 @@ public class QuestionsController(
 
         question.Analysis = analysis;
         question.Status = QuestionStatus.Analyzed;
+        question.PriorityScore = CalculatePriorityScore(question);
 
         await questionRepository.UpdateAsync(question, cancellationToken);
 
@@ -85,6 +88,7 @@ public class QuestionsController(
             Tag = createQuestionDto.Tag,
             CreatedUtc = DateTime.UtcNow
         };
+        question.PriorityScore = CalculatePriorityScore(question);
 
         await questionRepository.AddAsync(question, cancellationToken);
 
@@ -102,7 +106,7 @@ public class QuestionsController(
             Title = question.Title,
             Technology = question.Technology,
             Tag = question.Tag,
-            PriorityScore = question.PriorityScore,
+            PriorityScore = CalculatePriorityScore(question),
             Status = question.Status.ToString()
         };
     }
@@ -118,7 +122,7 @@ public class QuestionsController(
             Technology = question.Technology,
             Tag = question.Tag,
             HasAnswers = question.HasAnswers,
-            PriorityScore = question.PriorityScore,
+            PriorityScore = CalculatePriorityScore(question),
             Status = question.Status.ToString(),
             CreatedUtc = question.CreatedUtc,
             UpdatedUtc = null,
@@ -127,6 +131,7 @@ public class QuestionsController(
                 : new QuestionAnalysisDto
                 {
                     Summary = question.Analysis.Summary,
+                    Technologies = question.Analysis.Technologies,
                     RootCauses = question.Analysis.RootCauses,
                     MissingInformation = question.Analysis.MissingInformation,
                     TroubleshootingSteps = question.Analysis.TroubleshootingSteps,
@@ -134,5 +139,13 @@ public class QuestionsController(
                     ConfidenceScore = question.Analysis.ConfidenceScore
                 }
         };
+    }
+
+    private static int CalculatePriorityScore(Question question)
+    {
+        var ageHours = Math.Max(0, (int)(DateTime.UtcNow - question.CreatedUtc).TotalHours);
+        var confidence = question.Analysis?.ConfidenceScore ?? 0;
+
+        return PriorityCalculator.Calculate(question.HasAnswers, confidence, ageHours);
     }
 }
