@@ -49,11 +49,9 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
         cancellationToken.ThrowIfCancellationRequested();
 
         var prompt = $$"""
-            You are a Microsoft MVP.
+            You are a Microsoft MVP helping answer Microsoft Q&A questions.
 
-            Analyze the Microsoft Q&A question.
-
-            Return valid JSON ONLY.
+            Analyze the question and return JSON only.
 
             {
             "summary":"",
@@ -81,6 +79,18 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
 
         var responseJson = string.Concat(completionResult.Value.Content.Select(part => part.Text));
         return ParseAnalysis(responseJson);
+    }
+
+    public async Task<string> CompletePromptAsync(string prompt, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var completionResult = await _chatClient.CompleteChatAsync(
+            [new UserChatMessage(prompt)],
+            cancellationToken: cancellationToken);
+
+        return string.Concat(completionResult.Value.Content.Select(part => part.Text));
     }
 
     private static QuestionAnalysisDto ParseAnalysis(string responseJson)
@@ -117,12 +127,28 @@ public sealed class AzureOpenAiAnalysisService : IAiAnalysisService
             return string.Empty;
         }
 
-        if (property.ValueKind != JsonValueKind.String)
+        if (property.ValueKind == JsonValueKind.String)
         {
-            throw new JsonException($"The '{propertyName}' field must be a string.");
+            return property.GetString() ?? string.Empty;
         }
 
-        return property.GetString() ?? string.Empty;
+        if (property.ValueKind == JsonValueKind.Array)
+        {
+            var values = new List<string>();
+            foreach (var item in property.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String)
+                {
+                    throw new JsonException($"The '{propertyName}' array must contain only strings.");
+                }
+
+                values.Add(item.GetString() ?? string.Empty);
+            }
+
+            return string.Join(Environment.NewLine, values);
+        }
+
+        throw new JsonException($"The '{propertyName}' field must be a string or an array of strings.");
     }
 
     private static double ReadConfidenceScore(JsonElement root)

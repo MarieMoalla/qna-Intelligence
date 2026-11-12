@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using QnaIntelligence.Application.Interfaces;
-using QnaIntelligence.Application.Services;
 using QnaIntelligence.Infrastructure.Ai;
 using QnaIntelligence.Infrastructure.Options;
 using QnaIntelligence.Infrastructure.Persistence;
@@ -18,20 +17,8 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.Configure<AzureOpenAiOptions>(
     builder.Configuration.GetSection("AzureOpenAI"));
-
-var aiAnalysisProvider = builder.Configuration["AiAnalysis:Provider"] ?? "AzureOpenAI";
-switch (aiAnalysisProvider)
-{
-    case "AzureOpenAI":
-        builder.Services.AddScoped<IAiAnalysisService, AzureOpenAiAnalysisService>();
-        break;
-    case "Mock":
-        builder.Services.AddScoped<IAiAnalysisService, MockAiAnalysisService>();
-        break;
-    default:
-        throw new InvalidOperationException(
-            $"Unsupported AI analysis provider '{aiAnalysisProvider}'. Supported values are 'AzureOpenAI' and 'Mock'.");
-}
+builder.Services.AddScoped<AzureOpenAiAnalysisService>();
+builder.Services.AddScoped<IAiAnalysisService, AzureOpenAiAnalysisService>();
 
 var app = builder.Build();
 
@@ -46,6 +33,17 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.MapPost("/api/test-ai", async (
+        AzureOpenAiAnalysisService aiService,
+        CancellationToken cancellationToken) =>
+    {
+        var response = await aiService.CompletePromptAsync(
+            "Say Hello from GPT-4.1-mini",
+            cancellationToken);
+
+        return Results.Text(response);
+    });
 }
 
 app.UseHttpsRedirection();

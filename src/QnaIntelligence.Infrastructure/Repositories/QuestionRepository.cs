@@ -30,33 +30,16 @@ public class QuestionRepository(ApplicationDbContext dbContext) : IQuestionRepos
 
     public async Task UpdateAsync(Question question, CancellationToken cancellationToken)
     {
+        var analysis = question.Analysis;
+        var isNewAnalysis = analysis is not null
+            && dbContext.Entry(analysis).State == EntityState.Detached;
+
         dbContext.Questions.Update(question);
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task SaveAnalysisAsync(
-        Question question,
-        QuestionAnalysis analysis,
-        CancellationToken cancellationToken)
-    {
-        if (question.Analysis is null)
+        if (isNewAnalysis)
         {
-            analysis.QuestionId = question.Id;
-            analysis.Question = question;
-            question.Analysis = analysis;
-            await dbContext.Analyses.AddAsync(analysis, cancellationToken);
-        }
-        else
-        {
-            question.Analysis.Summary = analysis.Summary;
-            question.Analysis.RootCauses = analysis.RootCauses;
-            question.Analysis.MissingInformation = analysis.MissingInformation;
-            question.Analysis.TroubleshootingSteps = analysis.TroubleshootingSteps;
-            question.Analysis.ProposedAnswer = analysis.ProposedAnswer;
-            question.Analysis.ConfidenceScore = analysis.ConfidenceScore;
+            dbContext.Entry(analysis!).State = EntityState.Added;
         }
 
-        question.Status = QuestionStatus.Analyzed;
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 

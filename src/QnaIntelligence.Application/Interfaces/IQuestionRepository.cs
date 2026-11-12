@@ -12,10 +12,5 @@ public interface IQuestionRepository
 
     Task UpdateAsync(Question question, CancellationToken cancellationToken);
 
-    Task SaveAnalysisAsync(
-        Question question,
-        QuestionAnalysis analysis,
-        CancellationToken cancellationToken);
-
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }

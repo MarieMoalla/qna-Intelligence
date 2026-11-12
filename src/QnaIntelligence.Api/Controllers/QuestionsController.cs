@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Application.Questions.Dtos;
 using QnaIntelligence.Domain.Entities;
+using QnaIntelligence.Domain.Enums;
 
 namespace QnaIntelligence.Api.Controllers;
 
@@ -48,20 +49,23 @@ public class QuestionsController(
             question.Content,
             cancellationToken);
 
-        var analysis = new QuestionAnalysis
+        var analysis = question.Analysis ?? new QuestionAnalysis
         {
             Id = Guid.NewGuid(),
             QuestionId = question.Id,
-            Summary = analysisDto.Summary,
-            RootCauses = analysisDto.RootCauses,
-            MissingInformation = analysisDto.MissingInformation,
-            TroubleshootingSteps = analysisDto.TroubleshootingSteps,
-            ProposedAnswer = analysisDto.ProposedAnswer,
-            ConfidenceScore = analysisDto.ConfidenceScore,
             Question = question
         };
+        analysis.Summary = analysisDto.Summary;
+        analysis.RootCauses = analysisDto.RootCauses;
+        analysis.MissingInformation = analysisDto.MissingInformation;
+        analysis.TroubleshootingSteps = analysisDto.TroubleshootingSteps;
+        analysis.ProposedAnswer = analysisDto.ProposedAnswer;
+        analysis.ConfidenceScore = analysisDto.ConfidenceScore;
 
-        await questionRepository.SaveAnalysisAsync(question, analysis, cancellationToken);
+        question.Analysis = analysis;
+        question.Status = QuestionStatus.Analyzed;
+
+        await questionRepository.UpdateAsync(question, cancellationToken);
 
         return Ok(analysisDto);
     }
