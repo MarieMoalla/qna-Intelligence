@@ -12,6 +12,7 @@ public class QuestionRepository(ApplicationDbContext dbContext) : IQuestionRepos
     {
         return dbContext.Questions
             .Include(question => question.Analysis)
+            .Include(question => question.QuestionSources)
             .ToListAsync(cancellationToken);
     }
 

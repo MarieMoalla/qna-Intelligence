@@ -163,6 +163,37 @@ namespace QnaIntelligence.Infrastructure.Migrations
                     b.ToTable("Analyses");
                 });
 
+            modelBuilder.Entity("QnaIntelligence.Domain.Entities.QuestionSource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ImportedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("SourceId")
+                        .IsUnique();
+
+                    b.ToTable("QuestionSources");
+                });
+
             modelBuilder.Entity("QnaIntelligence.Domain.Entities.QuestionAnalysis", b =>
                 {
                     b.HasOne("QnaIntelligence.Domain.Entities.Question", "Question")
@@ -170,6 +201,16 @@ namespace QnaIntelligence.Infrastructure.Migrations
                         .HasForeignKey("QnaIntelligence.Domain.Entities.QuestionAnalysis", "QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("QnaIntelligence.Domain.Entities.QuestionSource", b =>
+                {
+                    b.HasOne("QnaIntelligence.Domain.Entities.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Question");
                 });

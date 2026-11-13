@@ -19,6 +19,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<AiRequestLog> AiRequestLogs => Set<AiRequestLog>();
 
+    public DbSet<QuestionSource> QuestionSources => Set<QuestionSource>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<FollowedTag>()
@@ -28,5 +30,19 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<FollowedTag>()
             .HasIndex(followedTag => followedTag.Name)
             .IsUnique();
+
+        modelBuilder.Entity<QuestionSource>()
+            .Property(questionSource => questionSource.SourceId)
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<QuestionSource>()
+            .HasIndex(questionSource => questionSource.SourceId)
+            .IsUnique();
+
+        modelBuilder.Entity<QuestionSource>()
+            .HasOne(questionSource => questionSource.Question)
+            .WithMany(question => question.QuestionSources)
+            .HasForeignKey(questionSource => questionSource.QuestionId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

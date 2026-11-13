@@ -11,6 +11,14 @@
 
 <section aria-labelledby="questions-heading">
     <h2 id="questions-heading">Questions</h2>
+    <label for="status-filter">Filter by status</label>
+    <select id="status-filter" @bind="selectedStatus">
+        <option value="All">All</option>
+        <option value="New">New</option>
+        <option value="Analyzed">Analyzed</option>
+        <option value="Answered">Answered</option>
+        <option value="Archived">Archived</option>
+    </select>
     @if (errorMessage is not null)
     {
         <p role="alert">@errorMessage</p>
@@ -19,19 +27,25 @@
     {
         <p>Loading questions...</p>
     }
-    else if (questions.Count == 0)
+    else if (!visibleQuestions.Any())
     {
-        <p>No questions found.</p>
+        <p>No questions found for this status.</p>
     }
     else
     {
         <ul>
-            @foreach (var question in questions)
+            @foreach (var question in visibleQuestions)
             {
                 <li>
                     <NavLink href="@($"/questions/{question.Id}")">
                         [@question.PriorityScore] @question.Title
                     </NavLink>
+                    @if (question.Source is not null)
+                    {
+                        <div>Source: @question.Source</div>
+                        <div>Imported: @question.ImportedUtc?.ToString("yyyy-MM-dd")</div>
+                    }
+                    <div>Status: @question.Status</div>
                     <button type="button"
                             @onclick="() => AnalyzeAsync(question.Id)"
                             disabled="@(analyzingQuestionId is not null)">
@@ -52,6 +66,12 @@
     private string? errorMessage;
     private Guid? analyzingQuestionId;
     private string? analysisError;
+    private string selectedStatus = "All";
+
+    private IEnumerable<QuestionDto> visibleQuestions =>
+        questions?.Where(question => selectedStatus == "All"
+            || string.Equals(question.Status, selectedStatus, StringComparison.OrdinalIgnoreCase))
+        ?? [];
 
     protected override async Task OnInitializedAsync()
     {

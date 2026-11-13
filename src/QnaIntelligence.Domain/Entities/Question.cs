@@ -25,4 +25,6 @@ public class Question
     public QuestionStatus Status { get; set; } = QuestionStatus.New;
 
     public QuestionAnalysis? Analysis { get; set; }
+
+    public ICollection<QuestionSource> QuestionSources { get; set; } = [];
 }

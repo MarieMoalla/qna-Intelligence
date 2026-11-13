@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using QnaIntelligence.Application.Features.Ingestion;
 using QnaIntelligence.Application.Interfaces;
 using QnaIntelligence.Infrastructure.Ai;
 using QnaIntelligence.Infrastructure.Options;
 using QnaIntelligence.Infrastructure.Persistence;
 using QnaIntelligence.Infrastructure.Repositories;
+using QnaIntelligence.Infrastructure.Services.Ingestion;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IFollowedTagRepository, FollowedTagRepository>();
+builder.Services.AddHttpClient<IQnaIngestionService, MicrosoftQnaIngestionService>();
 builder.Services.Configure<AzureOpenAiOptions>(
     builder.Configuration.GetSection("AzureOpenAI"));
 builder.Services.AddScoped<AzureOpenAiAnalysisService>();

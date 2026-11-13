@@ -13,4 +13,8 @@ public sealed class QuestionDto
     public int PriorityScore { get; set; }
 
     public string Status { get; set; } = string.Empty;
+
+    public string? Source { get; set; }
+
+    public DateTime? ImportedUtc { get; set; }
 }

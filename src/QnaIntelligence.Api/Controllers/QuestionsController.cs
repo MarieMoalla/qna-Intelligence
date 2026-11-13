@@ -108,7 +108,15 @@ public class QuestionsController(
             Technology = question.Technology,
             Tag = question.Tag,
             PriorityScore = CalculatePriorityScore(question),
-            Status = question.Status.ToString()
+            Status = question.Status.ToString(),
+            Source = question.QuestionSources
+                .OrderByDescending(source => source.ImportedUtc)
+                .Select(_ => "Microsoft Learn Q&A")
+                .FirstOrDefault(),
+            ImportedUtc = question.QuestionSources
+                .OrderByDescending(source => source.ImportedUtc)
+                .Select(source => (DateTime?)source.ImportedUtc)
+                .FirstOrDefault()
         };
     }
 
