@@ -38,14 +38,20 @@
             {
                 <li>
                     <NavLink href="@($"/questions/{question.Id}")">
-                        [@question.PriorityScore] @question.Title
+                        @if (question.ConfidenceScore is double confidenceScore)
+                        {
+                            <span class="confidence-score">[<text>@confidenceScore.ToString("P0")</text>]</span>
+                        }
+                        @question.Title
                     </NavLink>
                     @if (question.Source is not null)
                     {
                         <div>Source: @question.Source</div>
                         <div>Imported: @question.ImportedUtc?.ToString("yyyy-MM-dd")</div>
                     }
-                    <div>Status: @question.Status</div>
+                    <span class="status-badge @GetStatusBadgeClass(question.Status)">
+                        @GetStatusIcon(question.Status) @question.Status
+                    </span>
                     <button type="button"
                             @onclick="() => AnalyzeAsync(question.Id)"
                             disabled="@(analyzingQuestionId is not null)">
@@ -72,6 +78,24 @@
         questions?.Where(question => selectedStatus == "All"
             || string.Equals(question.Status, selectedStatus, StringComparison.OrdinalIgnoreCase))
         ?? [];
+
+    private static string GetStatusBadgeClass(string status) => status switch
+    {
+        "Analyzed" => "status-analyzed",
+        "New" => "status-new",
+        "Archived" => "status-archived",
+        "Answered" => "status-answered",
+        _ => "status-default"
+    };
+
+    private static string GetStatusIcon(string status) => status switch
+    {
+        "Analyzed" => "🟢",
+        "New" => "🟡",
+        "Archived" => "⚪",
+        "Answered" => "🔵",
+        _ => ""
+    };
 
     protected override async Task OnInitializedAsync()
     {

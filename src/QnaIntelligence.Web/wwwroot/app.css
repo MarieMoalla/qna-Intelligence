@@ -20,6 +20,45 @@ a, .btn-link {
     padding-top: 1.1rem;
 }
 
+.confidence-score {
+    font-weight: 700;
+    margin-right: 0.25rem;
+}
+
+.status-badge {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-top: 0.35rem;
+    padding: 0.15rem 0.6rem;
+}
+
+.status-analyzed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-new {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.status-archived {
+    background-color: #e2e3e5;
+    color: #41464b;
+}
+
+.status-answered {
+    background-color: #cfe2ff;
+    color: #084298;
+}
+
+.status-default {
+    background-color: #e2e3e5;
+    color: #41464b;
+}
+
 h1:focus {
     outline: none;
 }

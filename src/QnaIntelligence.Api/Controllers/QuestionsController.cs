@@ -116,7 +116,8 @@ public class QuestionsController(
             ImportedUtc = question.QuestionSources
                 .OrderByDescending(source => source.ImportedUtc)
                 .Select(source => (DateTime?)source.ImportedUtc)
-                .FirstOrDefault()
+                .FirstOrDefault(),
+            ConfidenceScore = question.Analysis?.ConfidenceScore
         };
     }
 

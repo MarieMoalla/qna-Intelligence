@@ -49,7 +49,7 @@ public sealed partial class MicrosoftQnaIngestionService(
         return questions;
     }
 
-    public async Task<QuestionImportResultDto> ImportLatestQuestionsAsync(
+    public async Task<ImportResultDto> ImportLatestQuestionsAsync(
         CancellationToken cancellationToken)
     {
         var discoveredQuestions = await GetLatestQuestionsAsync(cancellationToken);
@@ -74,7 +74,7 @@ public sealed partial class MicrosoftQnaIngestionService(
 
         if (candidates.Count == 0)
         {
-            return new QuestionImportResultDto { Duplicates = duplicates };
+            return new ImportResultDto { Duplicates = duplicates };
         }
 
         var sourceIds = candidates.Select(candidate => candidate.SourceId).ToList();
@@ -91,6 +91,7 @@ public sealed partial class MicrosoftQnaIngestionService(
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var imported = 0;
+        var analyzed = 0;
         var failed = 0;
         var importedUtc = DateTime.UtcNow;
 
@@ -102,19 +103,17 @@ public sealed partial class MicrosoftQnaIngestionService(
                 continue;
             }
 
-            await using var transaction = await dbContext.Database
-                .BeginTransactionAsync(cancellationToken);
+            var question = new Question
+            {
+                Id = Guid.NewGuid(),
+                Title = discoveredQuestion.Title,
+                Url = discoveredQuestion.Url,
+                Technology = discoveredQuestion.Technology,
+                CreatedUtc = discoveredQuestion.DiscoveredUtc ?? importedUtc
+            };
+
             try
             {
-                var question = new Question
-                {
-                    Id = Guid.NewGuid(),
-                    Title = discoveredQuestion.Title,
-                    Url = discoveredQuestion.Url,
-                    Technology = discoveredQuestion.Technology,
-                    CreatedUtc = discoveredQuestion.DiscoveredUtc ?? importedUtc
-                };
-
                 var questionSource = new QuestionSource
                 {
                     Id = Guid.NewGuid(),
@@ -127,39 +126,12 @@ public sealed partial class MicrosoftQnaIngestionService(
                 dbContext.Questions.Add(question);
                 dbContext.QuestionSources.Add(questionSource);
                 await dbContext.SaveChangesAsync(cancellationToken);
-
-                var analysisDto = await aiAnalysisService.AnalyzeAsync(
-                    question.Id,
-                    question.Title,
-                    question.Content,
-                    cancellationToken);
-
-                var analysis = ToAnalysis(question, analysisDto);
-                question.Analysis = analysis;
-                dbContext.Analyses.Add(analysis);
-                question.Status = QuestionStatus.Analyzed;
-                await dbContext.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-
                 imported++;
                 existingSourceIds.Add(sourceId);
                 existingUrls.Add(discoveredQuestion.Url);
             }
-            catch (DbUpdateConcurrencyException exception)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                logger.LogError(
-                    exception,
-                    "Concurrency conflict importing Q&A question {SourceId} at {QuestionUrl}. Affected entries: {Entries}",
-                    sourceId,
-                    discoveredQuestion.Url,
-                    DescribeEntries(exception));
-                dbContext.ChangeTracker.Clear();
-                failed++;
-            }
             catch (DbUpdateException)
             {
-                await transaction.RollbackAsync(cancellationToken);
                 dbContext.ChangeTracker.Clear();
 
                 var wasImportedConcurrently = await dbContext.QuestionSources
@@ -172,29 +144,69 @@ public sealed partial class MicrosoftQnaIngestionService(
                 }
 
                 duplicates++;
+                continue;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
                 dbContext.ChangeTracker.Clear();
                 throw;
             }
             catch (Exception exception)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
                 logger.LogError(
                     exception,
-                    "Failed to import or analyze Q&A question {SourceId} at {QuestionUrl}; continuing with remaining questions.",
+                    "Failed to import Q&A question {SourceId} at {QuestionUrl}; continuing with remaining questions.",
                     sourceId,
                     discoveredQuestion.Url);
+                dbContext.ChangeTracker.Clear();
+                failed++;
+                continue;
+            }
+
+            await using var analysisTransaction = await dbContext.Database
+                .BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var analysisDto = await aiAnalysisService.AnalyzeAsync(
+                    question.Id,
+                    question.Title,
+                    question.Content,
+                    cancellationToken);
+
+                var analysis = ToAnalysis(question, analysisDto);
+                dbContext.Analyses.Add(analysis);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                question.Analysis = analysis;
+                question.Status = QuestionStatus.Analyzed;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await analysisTransaction.CommitAsync(cancellationToken);
+                analyzed++;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                await analysisTransaction.RollbackAsync(CancellationToken.None);
+                dbContext.ChangeTracker.Clear();
+                throw;
+            }
+            catch (Exception exception)
+            {
+                await analysisTransaction.RollbackAsync(CancellationToken.None);
+                logger.LogError(
+                    exception,
+                    "Question {QuestionId} from source {SourceId} was imported but analysis failed; keeping status New and continuing.",
+                    question.Id,
+                    sourceId);
+
                 dbContext.ChangeTracker.Clear();
                 failed++;
             }
         }
 
-        return new QuestionImportResultDto
+        return new ImportResultDto
         {
             Imported = imported,
+            Analyzed = analyzed,
             Duplicates = duplicates,
             Failed = failed
         };

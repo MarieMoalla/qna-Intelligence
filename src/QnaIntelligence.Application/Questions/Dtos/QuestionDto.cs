@@ -17,4 +17,6 @@ public sealed class QuestionDto
     public string? Source { get; set; }
 
     public DateTime? ImportedUtc { get; set; }
+
+    public double? ConfidenceScore { get; set; }
 }

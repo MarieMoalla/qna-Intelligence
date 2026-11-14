@@ -20,7 +20,7 @@ public sealed class IngestionController(
     }
 
     [HttpPost("import")]
-    public async Task<ActionResult<QuestionImportResultDto>> Import(
+    public async Task<ActionResult<ImportResultDto>> Import(
         CancellationToken cancellationToken)
     {
         try
